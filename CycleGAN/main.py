@@ -7,6 +7,7 @@ from glob import glob
 import os
 import PIL
 
+# constants
 root = os.path.dirname(__file__)
 MONET_FILES = glob(os.path.join(root, 'data', 'monet_tfrec', '*.tfrec'))
 PHOTO_FILES = glob(os.path.join(root, 'data', 'photo_tfrec', '*.tfrec'))
@@ -15,6 +16,7 @@ IMAGE_SIZE = 256
 OUTPUT_CHANNELS = 3
 LAMBDA_CYCLE = 10
 
+# decode individual image
 def load_image(example):
     tfrecord_format = {
         'image_name': tf.io.FixedLenFeature([], tf.string),
@@ -28,11 +30,13 @@ def load_image(example):
     image = tf.reshape(image, [IMAGE_SIZE, IMAGE_SIZE, 3])
     return image
 
+# load dataset from TFRecord files
 def load_dataset(files):
     dataset = tf.data.TFRecordDataset(files)
     dataset = dataset.map(load_image, num_parallel_calls=AUTOTUNE)
     return dataset
 
+# group of layers for downsampling
 def downsample(filters, size, apply_instancenorm=True):
     initializer = tf.random_normal_initializer(0., 0.02)
     gamma_init = keras.initializers.RandomNormal(mean=0.0, stddev=0.02)
@@ -47,6 +51,7 @@ def downsample(filters, size, apply_instancenorm=True):
 
     return result
 
+# group of layers for upsampling
 def upsample(filters, size, apply_dropout=False):
     initializer = tf.random_normal_initializer(0., 0.02)
     gamma_init = keras.initializers.RandomNormal(mean=0.0, stddev=0.02)
@@ -63,6 +68,7 @@ def upsample(filters, size, apply_dropout=False):
 
     return result
 
+# function for creating a generator model
 def create_generator_model():
     inputs = layers.Input(shape=[IMAGE_SIZE, IMAGE_SIZE, 3])
 
@@ -109,6 +115,7 @@ def create_generator_model():
 
     return keras.Model(inputs=inputs, outputs=x)
 
+# function for creating discriminator model
 def create_discriminator_model():
 
     initializer = tf.random_normal_initializer(0., 0.02)
@@ -129,6 +136,8 @@ def create_discriminator_model():
 
     return keras.Model(inputs=inputs, outputs=x)
 
+
+# define necessary loss functions
 def generator_loss(generated):
     cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.NONE)
     loss = cross_entropy(tf.ones_like(generated), generated)
@@ -154,6 +163,7 @@ def identity_loss(real_image, same_image):
 
     return loss * LAMBDA_CYCLE * 0.5
 
+# define cycle GAN model class
 class CycleGAN(keras.Model):
     def __init__(self, monet_generator, photo_generator, monet_discriminator, photo_discriminator):
         super(CycleGAN, self).__init__()
@@ -228,20 +238,23 @@ class CycleGAN(keras.Model):
                 "photo_disc_loss": photo_disc_loss
             }
 
-
+# load and preprocess data
 monet_ds = load_dataset(MONET_FILES).batch(1)
 photo_ds = load_dataset(PHOTO_FILES).batch(1)
 
+# define models
 monet_generator = create_generator_model()
 photo_generator = create_generator_model()
 monet_discriminator = create_discriminator_model()
 photo_discriminator = create_discriminator_model()
 
+# define optimizers
 monet_gen_optimizer = tf.keras.optimizers.Adam(2e-4, beta_1=0.5)
 photo_gen_optimizer = tf.keras.optimizers.Adam(2e-4, beta_1=0.5)
 monet_disc_optimizer = tf.keras.optimizers.Adam(2e-4, beta_1=0.5)
 photo_disc_optimizer = tf.keras.optimizers.Adam(2e-4, beta_1=0.5)
 
+# create cycle GAN model, compile, and train it
 model = CycleGAN(
     monet_generator=monet_generator,
     photo_generator=photo_generator,
@@ -265,6 +278,7 @@ model.fit(
     epochs=25
 )
 
+# transform all photographs and save them locally
 i = 1
 for img in photo_ds:
     prediction = monet_generator(img, training=False)[0].numpy()
