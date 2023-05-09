@@ -1,8 +1,10 @@
-import os
 import tensorflow as tf
+import tensorflow_hub as hub
 import numpy as np
 import PIL
 
+content_path = 'Neural Style Transfer/Green_Sea_Turtle_grazing_seagrass.jpg'
+style_path = 'Neural Style Transfer/The_Great_Wave_off_Kanagawa.jpg'
 
 def tensor_to_image(tensor):
   tensor = tensor * 255
@@ -13,9 +15,6 @@ def tensor_to_image(tensor):
   image = PIL.Image.fromarray(tensor)
   image.save("Neural Style Transfer/result image.jpg")
   return image
-
-content_path = 'Neural Style Transfer/Green_Sea_Turtle_grazing_seagrass.jpg'
-style_path = 'Neural Style Transfer/The_Great_Wave_off_Kanagawa.jpg'
 
 def load_img(path_to_img):
   max_dim = 512
@@ -36,7 +35,6 @@ def load_img(path_to_img):
 content_image = load_img(content_path)
 style_image = load_img(style_path)
 
-import tensorflow_hub as hub
 hub_model = hub.load('https://tfhub.dev/google/magenta/arbitrary-image-stylization-v1-256/2')
 stylized_image = hub_model(tf.constant(content_image), tf.constant(style_image))[0]
 tensor_to_image(stylized_image)
