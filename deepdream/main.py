@@ -36,17 +36,10 @@ class DeepDream(tf.Module):
     def __init__(self, model):
         self.model = model
     
-    @tf.function(
-        input_signature=(
-            tf.TensorSpec(shape=[None, None, 3], dtype=tf.float32),
-            tf.TensorSpec(shape=[], dtype=tf.int32),
-            tf.TensorSpec(shape=[], dtype=tf.float32)
-        )
-    )
     def __call__(self, image, steps, step_size):
         print("Tracing")
         loss = tf.constant(0.0)
-        for _ in tf.range(steps):
+        for step in range(steps):
             with tf.GradientTape() as tape:
                 tape.watch(image)
                 loss = calc_loss(image, self.model)
@@ -56,8 +49,9 @@ class DeepDream(tf.Module):
 
             image += gradients * step_size
             image = tf.clip_by_value(image, -1, 1)
+            print(f"Step {step}, loss {loss}", end="\r")
 
-        return loss, image
+        return image
 
 base_model = tf.keras.applications.InceptionV3(include_top=False, weights='imagenet')
 print(base_model.summary())
@@ -70,17 +64,7 @@ def run_deep_dream(image, steps=100, step_size=0.01):
     image = tf.keras.applications.inception_v3.preprocess_input(image)
     image = tf.convert_to_tensor(image)
     step_size = tf.convert_to_tensor(step_size)
-    
-    steps_remaining = steps
-    step = 0
-    while steps_remaining:
-        run_steps = tf.constant(steps_remaining)
-        steps_remaining -= run_steps
-        step += run_steps
-        loss, image = deepdream(image, run_steps, tf.constant(step_size))
-
-        print("Step {}, loss {}".format(step, loss))
-    
+    image = deepdream(image, steps, tf.constant(step_size))
     result = deprocess(image)
 
     return result
