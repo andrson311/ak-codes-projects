@@ -1,10 +1,14 @@
+import os
+os.environ["CUDA_VISIBLE_DEVICES"]="-1"
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 import tensorflow as tf
 import tensorflow_hub as hub
 import numpy as np
 import PIL
 
-content_path = 'Neural Style Transfer/Green_Sea_Turtle_grazing_seagrass.jpg'
-style_path = 'Neural Style Transfer/The_Great_Wave_off_Kanagawa.jpg'
+root = os.path.dirname(__file__)
+content_path = os.path.join(root, 'Green_Sea_Turtle_grazing_seagrass.jpg')
+style_path = os.path.join(root, 'The_Great_Wave_off_Kanagawa.jpg')
 
 def tensor_to_image(tensor):
   tensor = tensor * 255
@@ -13,7 +17,7 @@ def tensor_to_image(tensor):
     assert tensor.shape[0] == 1
     tensor = tensor[0]
   image = PIL.Image.fromarray(tensor)
-  image.save("Neural Style Transfer/result image.jpg")
+  image.save(os.path.join(root, "result image.jpg"))
   return image
 
 def load_img(path_to_img):
