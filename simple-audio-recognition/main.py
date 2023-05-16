@@ -205,7 +205,7 @@ val_datagen = DataGenerator(val_set, val_labels, 40, None)
 rows = 32
 columns = 40
 batch_size = 100
-epochs = 1
+epochs = 50
 base_path = os.path.join(root, 'working', 'models')
 
 if not os.path.exists(base_path):
@@ -257,14 +257,14 @@ model.load_weights(os.path.join(base_path, 'cp-0024.ckpt'))
 
 print(model.summary())
 
-""" history = model.fit(
+history = model.fit(
     train_datagen,
     steps_per_epoch=steps_per_epoch,
     epochs=epochs,
     validation_data=val_datagen,
     validation_steps=val_size//batch_size,
     callbacks=[earlystopping_callback, reduce_lr_callback, checkpoint_callback]
-) """
+)
 
 test_path = os.path.join(root, 'working', 'test')
 
