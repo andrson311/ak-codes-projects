@@ -7,7 +7,6 @@ import pretty_midi
 import tensorflow as tf
 from tqdm import tqdm
 
-
 seed = 42
 tf.random.set_seed(seed)
 np.random.seed(seed)
@@ -158,9 +157,7 @@ loss = {
 
 optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
 
-model.compile(loss=loss, optimizer=optimizer)
-
-print(model.summary())
+#model.compile(loss=loss, optimizer=optimizer)
 
 model.compile(
     loss=loss,
@@ -183,7 +180,7 @@ callbacks = [
         restore_best_weights=True),
 ]
 
-epochs = 50
+epochs = 100
 
 history = model.fit(
     train_ds,
