@@ -72,6 +72,8 @@ train_spectrogram_ds = train_spectrogram_ds.cache().shuffle(10000).prefetch(tf.d
 val_spectrogram_ds = val_spectrogram_ds.cache().prefetch(tf.data.AUTOTUNE)
 test_spectrogram_ds = test_spectrogram_ds.cache().prefetch(tf.data.AUTOTUNE)
 
+print(train_spectrogram_ds)
+
 for example_spectrograms, example_spect_labels in train_spectrogram_ds.take(1):
     break
 

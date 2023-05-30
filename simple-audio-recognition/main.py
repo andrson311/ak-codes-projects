@@ -1,16 +1,12 @@
 import os
-os.environ["CUDA_VISIBLE_DEVICES"]='0'
 from glob import glob
 from pyunpack import Archive
 import pandas as pd
 import numpy as np
 import tensorflow as tf
-from keras import Input, layers, models
-from sklearn.preprocessing import StandardScaler, MinMaxScaler, LabelBinarizer
-from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score
+from keras import Input, layers
+from sklearn.preprocessing import StandardScaler
 import math
-import shutil
-import pickle
 import librosa
 
 root = os.path.dirname(__file__)
@@ -119,7 +115,7 @@ def split_train_test_stratified_shuffle(images, labels, train_size=0.9):
     val_set = val_set[val_shuffle]
     train_labels = train_labels[train_shuffle]
     val_labels = val_labels[val_shuffle]
-
+    print(train_set)
     return train_set, train_labels, val_set, val_labels
 
 def preprocess_data(file, background_generator, target_sr=16000, n_mfcc=40, threshold=0.7):
@@ -185,14 +181,6 @@ def build_model(n_classes, input_shape):
 
     return tf.keras.Model(model_input, model_output)
 
-def multiclass_roc(y_test, y_pred, average='macro'):
-    lb = LabelBinarizer()
-    lb.fit(y_test)
-    y_test = lb.transform(y_test)
-    y_pred = lb.transform(y_pred)
-
-    return roc_auc_score(y_test, y_pred, average=average)
-
 bg_files = glob(os.path.join(train_path, '_background_noise_', '*.wav'))
 bg_files = [librosa.load(elem, sr=16000)[0] for elem in bg_files]
 background_generator = [chop_audio(x) for x in bg_files]
@@ -205,7 +193,7 @@ val_datagen = DataGenerator(val_set, val_labels, 40, None)
 rows = 32
 columns = 40
 batch_size = 100
-epochs = 50
+epochs = 1
 base_path = os.path.join(root, 'working', 'models')
 
 if not os.path.exists(base_path):
@@ -257,14 +245,14 @@ model.load_weights(os.path.join(base_path, 'cp-0024.ckpt'))
 
 print(model.summary())
 
-history = model.fit(
+""" history = model.fit(
     train_datagen,
     steps_per_epoch=steps_per_epoch,
     epochs=epochs,
     validation_data=val_datagen,
     validation_steps=val_size//batch_size,
     callbacks=[earlystopping_callback, reduce_lr_callback, checkpoint_callback]
-)
+) """
 
 test_path = os.path.join(root, 'working', 'test')
 
