@@ -2,12 +2,12 @@ import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+
 from tensorflow.python.framework.ops import disable_eager_execution
 disable_eager_execution()
 
 (input_train, target_train), (input_test, target_test) = tf.keras.datasets.mnist.load_data()
 
-print(input_train.shape)
 img_width, img_height = input_train.shape[1], input_train.shape[2]
 batch_size = 128
 epochs = 100
