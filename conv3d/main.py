@@ -22,7 +22,7 @@ BATCH_SIZE = 128
 EPOCHS = 100
 CLASSES = 10
 
-
+# data preprocessing
 def array_to_color(array, cmap='Oranges'):
     s_m = ScalarMappable(cmap=cmap)
     return s_m.to_rgba(array)[:,:-1]
@@ -46,6 +46,7 @@ with h5py.File(os.path.join(ROOT, 'data', 'full_dataset_vectors.h5'), 'r') as hf
     y_train = tf.keras.utils.to_categorical(y_train).astype(np.integer)
     y_test = tf.keras.utils.to_categorical(y_test).astype(np.integer)
 
+# defining & training model
 model = tf.keras.Sequential([
     tf.keras.layers.Conv3D(32, kernel_size=(3, 3, 3), activation='relu', kernel_initializer='he_uniform', input_shape=sample_shape),
     tf.keras.layers.MaxPooling3D(pool_size=(2, 2, 2)),
@@ -81,10 +82,9 @@ history = model.fit(X_train, y_train,
                     validation_split=0.2,
                     callbacks=callbacks)
 
+# getting results
 score = model.evaluate(X_test, y_test, verbose=1)
 print(f'Test loss: {score[0]} / Test accuracy: {score[1]}')
-
-# Plot history: Categorical crossentropy & Accuracy
 plt.plot(history.history['loss'], label='Categorical crossentropy (training data)')
 plt.plot(history.history['val_loss'], label='Categorical crossentropy (validation data)')
 plt.plot(history.history['accuracy'], label='Accuracy (training data)')
