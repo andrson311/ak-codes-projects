@@ -30,6 +30,7 @@ user_ids = ratings.batch(1_000_000).map(lambda x: x["user_id"])
 unique_movie_titles = np.unique(np.concatenate(list(movie_titles)))
 unique_user_ids = np.unique(np.concatenate(list(user_ids)))
 
+# Stage 1: Retrieve recommended movies
 embedding_dimension = 32
 
 def build_embedding(vocab, embedding_dimension):
@@ -41,10 +42,10 @@ def build_embedding(vocab, embedding_dimension):
     ])
     return model
 
+
 user_model = build_embedding(unique_user_ids, embedding_dimension)
 movie_model = build_embedding(unique_movie_titles, embedding_dimension)
 
-# Stage 1: Retrieve recommended movies
 retrieval_metrics = tfrs.metrics.FactorizedTopK(
     candidates=movies.batch(128).map(movie_model)
 )
@@ -53,7 +54,7 @@ retrieval_task = tfrs.tasks.Retrieval(
     metrics=retrieval_metrics
 )
 
-class Retrieval(tfrs.models.Model):
+class RetrievalModel(tfrs.models.Model):
     def __init__(self, user_model, movie_model):
         super().__init__()
         self.movie_model: tf.keras.Model = movie_model
@@ -65,28 +66,23 @@ class Retrieval(tfrs.models.Model):
         positive_movie_embeddings = self.movie_model(features['movie_title'])
         return self.task(user_embeddings, positive_movie_embeddings)
 
-retrieval_model = Retrieval(user_model, movie_model)
+retrieval_model = RetrievalModel(user_model, movie_model)
 retrieval_model.compile(optimizer=tf.keras.optimizers.Adagrad(0.1))
 retrieval_model.fit(cached_train, epochs=10)
 retrieval_model.evaluate(cached_test)
 
-index = tfrs.layers.factorized_top_k.BruteForce(retrieval_model.user_model)
-index.index_from_dataset(
-    tf.data.Dataset.zip(movies.batch(100), movies.batch(100).map(retrieval_model.movie_model))
+# Stage 2: Rank retrieved movies
+ranking_task = tfrs.tasks.Ranking(
+    loss=tf.keras.losses.MeanSquaredError(),
+    metrics=[tf.keras.metrics.RootMeanSquaredError()]
 )
 
-user = 42
-_, titles = index(tf.constant([f'{user}']))
-retrieved = np.asarray(titles[0, :10])
-print(f'Recommendations for user with id: {user}: {retrieved}')
-
-# Stage 2: Rank retrieved movies
-
-class RankingModel(tf.keras.Model):
-    def __init__(self):
+class RankingModel(tfrs.models.Model):
+    def __init__(self, user_model, movie_model):
         super().__init__()
-        self.user_embeddings = build_embedding(unique_user_ids, embedding_dimension)
-        self.movie_embeddings = build_embedding(unique_movie_titles, embedding_dimension)
+        self.movie_model: tf.keras.Model = movie_model
+        self.user_model: tf.keras.Model = user_model
+        self.task: tf.keras.layers.Layer = ranking_task
 
         self.ratings = tf.keras.Sequential([
             tf.keras.layers.Dense(256, activation='relu'),
@@ -94,27 +90,10 @@ class RankingModel(tf.keras.Model):
             tf.keras.layers.Dense(1)
         ])
     
-    def call(self, inputs):
-        user_id, movie_title = inputs
-        user_embedding = self.user_embeddings(user_id)
-        movie_embedding = self.movie_embeddings(movie_title)
-        return self.ratings(tf.concat([user_embedding, movie_embedding], axis=1))
-
-ranking_task = tfrs.tasks.Ranking(
-    loss=tf.keras.losses.MeanSquaredError(),
-    metrics=[tf.keras.metrics.RootMeanSquaredError()]
-)
-
-class Ranking(tfrs.models.Model):
-    def __init__(self):
-        super().__init__()
-        self.ranking_model: tf.keras.Model = RankingModel()
-        self.task: tf.keras.layers.Layer = ranking_task
-    
     def call(self, features: Dict[str, tf.Tensor]) -> tf.Tensor:
-        return self.ranking_model(
-            (features['user_id'], features['movie_title'])
-        )
+        user_embedding = self.user_model(features['user_id'])
+        movie_embedding = self.movie_model(features['movie_title'])
+        return self.ratings(tf.concat([user_embedding, movie_embedding], axis=1))
 
     def compute_loss(self, features: Dict[Text, tf.Tensor], training=False) -> tf.Tensor:
         labels = features.pop('user_rating')
@@ -122,10 +101,22 @@ class Ranking(tfrs.models.Model):
 
         return self.task(labels=labels, predictions=rating_predictions)
     
-ranking_model = Ranking()
+ranking_model = RankingModel(user_model, movie_model)
 ranking_model.compile(optimizer=tf.keras.optimizers.Adagrad(0.1))
 ranking_model.fit(cached_train, epochs=100)
 ranking_model.evaluate(cached_test)
+
+# Results
+user = 42
+
+index = tfrs.layers.factorized_top_k.BruteForce(retrieval_model.user_model)
+index.index_from_dataset(
+    tf.data.Dataset.zip(movies.batch(100), movies.batch(100).map(retrieval_model.movie_model))
+)
+
+_, titles = index(tf.constant([f'{user}']))
+retrieved = np.asarray(titles[0, :10])
+print(f'Recommendations for user with id: {user}: {retrieved}')
 
 ratings = {}
 for movie_title in retrieved:
