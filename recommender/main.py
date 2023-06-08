@@ -21,6 +21,8 @@ ratings = ratings.map(lambda x: {
 
 movies = movies.map(lambda x: x["movie_title"])
 
+print(movies)
+
 tf.random.set_seed(42)
 shuffled = ratings.shuffle(100_000, seed=42, reshuffle_each_iteration=False)
 
