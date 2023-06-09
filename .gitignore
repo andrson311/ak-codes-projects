@@ -4,6 +4,5 @@ simple-audio-recognition/tensorflow-speech-recognition-challenge/
 simple-audio-recognition/working/
 generate-music-CVAE/
 CycleGAN/transformed
-projects/ak-codes-projects/cvae/training_checkpoints/
-projects/ak-codes-projects/discord.py/
-projects/ak-codes-projects/openai-chatbot/auth.json
+cvae/training_checkpoints/
+openai-chatbot/auth.json
