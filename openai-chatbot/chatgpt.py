@@ -26,4 +26,4 @@ while True:
     prompt = input('You: ')
     response = conversation.predict(input=prompt)
 
-    print(response)
+    print('AI:', response)
