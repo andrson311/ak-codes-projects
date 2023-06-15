@@ -6,3 +6,4 @@ generate-music-CVAE/
 CycleGAN/transformed
 cvae/training_checkpoints/
 openai-chatbot/auth.json
+discord-gpt/auth.json

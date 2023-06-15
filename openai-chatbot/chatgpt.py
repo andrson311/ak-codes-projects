@@ -15,7 +15,7 @@ def get_token(token_name):
 
 os.environ['OPENAI_API_KEY'] = get_token('openai-token')
 
-chat = ChatOpenAI(temperature=0.9, model_name="gpt-3.5-turbo")
+chat = ChatOpenAI(temperature=0.9)
 memory = ConversationBufferWindowMemory()
 conversation = ConversationChain(
     llm=chat,
