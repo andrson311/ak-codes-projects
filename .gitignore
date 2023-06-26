@@ -7,3 +7,4 @@ CycleGAN/transformed
 cvae/training_checkpoints/
 openai-chatbot/auth.json
 discord-gpt/auth.json
+discord-gpt/yt
