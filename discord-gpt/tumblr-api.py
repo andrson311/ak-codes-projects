@@ -25,13 +25,7 @@ def get_tokens():
     if 'redirect-response' not in auth_data['tumblr-tokens']:
         print(f'\nPlease go here and authorize: \n{full_authorize_url}')
         redirect_response = input('Allow then paste the full redirect URL here:\n').strip()
-        with open(os.path.join(ROOT, 'auth.json'), 'w') as auth_file:
-            auth_data['tumblr-tokens']['redirect-response'] = redirect_response
-            json.dump(auth_data, auth_file, indent=4)
-    else:
-        redirect_response = auth_data['tumblr-tokens']['redirect-response']
-
-    if 'oauth-token' not in auth_data['tumblr-tokens']:
+        auth_data['tumblr-tokens']['redirect-response'] = redirect_response
         oauth_response = oauth_session.parse_authorization_response(redirect_response)
         verifier = oauth_response.get('oauth_verifier')
 
@@ -43,7 +37,6 @@ def get_tokens():
             verifier=verifier
         )
 
-        print(verifier)
         oauth_tokens = oauth_session.fetch_access_token(access_token_url)
 
         with open(os.path.join(ROOT, 'auth.json'), 'w') as auth_file:
@@ -55,7 +48,6 @@ def get_tokens():
     else:
         oauth_token = auth_data['tumblr-tokens']['oauth-token']
         oauth_token_secret = auth_data['tumblr-tokens']['oauth-token-secret']
-
 
     return {
         'consumer_key': consumer_key,
